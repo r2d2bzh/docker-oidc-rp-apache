@@ -1,38 +1,66 @@
-FROM ubuntu:bionic
-MAINTAINER hans.zandbelt@zmartzone.eu
+FROM alpine:3.10
 
-RUN apt-get update && apt-get install -y pkg-config make gcc gdb lcov valgrind vim curl iputils-ping wget
-RUN apt-get update && apt-get install -y autoconf automake libtool
-RUN apt-get update && apt-get install -y libssl-dev libjansson-dev libcurl4-openssl-dev check
-#RUN apt-get update && apt-get install -y libcjose-dev
-RUN apt-get update && apt-get install -y apache2 apache2-dev
+ENV MOD_AUTH_OPENIDC_REPOSITORY https://github.com/zmartzone/mod_auth_openidc.git
 
-RUN apt-get update && apt-get install -y libpcre3-dev zlib1g-dev
+ENV MOD_AUTH_OPENIDC_BRANCH master
 
-RUN wget https://mod-auth-openidc.org/download/libcjose0_0.6.1.5-1~bionic+1_amd64.deb
-RUN wget https://mod-auth-openidc.org/download/libcjose-dev_0.6.1.5-1~bionic+1_amd64.deb
-RUN dpkg -i libcjose0_0.6.1.5-1~bionic+1_amd64.deb
-RUN dpkg -i libcjose-dev_0.6.1.5-1~bionic+1_amd64.deb
+ENV BUILD_DIR /tmp/mod_auth_openidc
 
-RUN a2enmod ssl
-RUN a2ensite default-ssl
+ENV APACHE_LOG_DIR /var/log/apache2
 
-RUN echo "/usr/sbin/apache2ctl start && tail -f /var/log/apache2/error.log " >> /root/run.sh
-RUN chmod a+x /root/run.sh
+ENV APACHE_DEFAULT_CONF /etc/apache2/httpd.conf
 
-COPY . /root/mod_auth_openidc
-WORKDIR /root/mod_auth_openidc
+# add testing repository (for cjose library)
+RUN echo "http://nl.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
 
-RUN ./autogen.sh
-RUN ./configure CFLAGS="-g -O0" LDFLAGS="-lrt"
-#-I/usr/include/apache2
-RUN make clean && make test 
-RUN make install
+# ADD source
+RUN mkdir ${BUILD_DIR}
 
-WORKDIR /root
+# add dependencies, build and install mod_auth_openidc, need atomic operation for image size
+RUN apk update && apk add --no-cache \
+  apache2 \
+  apache2-proxy \
+  wget \
+  jansson \
+  hiredis \
+  cjose \
+  cjose-dev \
+  git \
+  autoconf \
+  build-base \
+  automake \
+  curl \
+  apache2-dev \
+  curl-dev \
+  pcre-dev \
+  libtool \
+  && \
+  cd ${BUILD_DIR} && \
+  git clone -b ${MOD_AUTH_OPENIDC_BRANCH} ${MOD_AUTH_OPENIDC_REPOSITORY} && \
+  cd mod_auth_openidc && \
+  ./autogen.sh && \
+  ./configure CFLAGS="-g -O0" LDFLAGS="-lrt" && \
+  make test && \
+  make install && \
+  cd ../.. && \
+  rm -fr ${BUILD_DIR} && \
+  apk del git cjose-dev apache2-dev autoconf automake build-base wget curl-dev pcre-dev libtool
 
-ADD openidc.conf /etc/apache2/conf-available
-RUN a2enconf openidc
-RUN /usr/sbin/apache2ctl start
+# configure apache 
+RUN  apk add --no-cache sed && \
+  echo "LoadModule auth_openidc_module /usr/lib/apache2/mod_auth_openidc.so" >>  ${APACHE_DEFAULT_CONF} && \
+  ln -sfT /dev/stderr "${APACHE_LOG_DIR}/error.log" && \
+  ln -sfT /dev/stdout "${APACHE_LOG_DIR}/access.log" && \
+  ln -sfT /dev/stdout "${APACHE_LOG_DIR}/other_vhosts_access.log" && \
+  chown -R --no-dereference "apache:users" "${APACHE_LOG_DIR}" && \
+  apk del sed
 
-# docker run -p 443:443 -it 749d1204d189 /bin/bash -c "source /etc/apache2/envvars && valgrind --leak-check=full /usr/sbin/apache2 -X"
+# https://httpd.apache.org/docs/2.4/stopping.html#gracefulstop
+# stop gracefully when docker stops, create issue with interactive mode because it's the signal use by the docker engine on windows.
+STOPSIGNAL WINCH
+
+# port to expose, referes to the Listen 80 in the embedded httpd.conf
+EXPOSE 80
+
+# launch apache
+CMD exec /usr/sbin/httpd -D FOREGROUND -f ${APACHE_DEFAULT_CONF}
