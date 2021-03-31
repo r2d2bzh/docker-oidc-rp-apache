@@ -59,8 +59,5 @@ RUN  apk add --no-cache sed && \
 # stop gracefully when docker stops, create issue with interactive mode because it's the signal use by the docker engine on windows.
 STOPSIGNAL WINCH
 
-# port to expose, referes to the Listen 80 in the embedded httpd.conf
-EXPOSE 80
-
 # launch apache
 CMD exec /usr/sbin/httpd -D FOREGROUND -f ${APACHE_DEFAULT_CONF}
