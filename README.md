@@ -3,6 +3,14 @@
 [![Code Quality: Cpp](https://img.shields.io/lgtm/grade/cpp/g/zmartzone/mod_auth_openidc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/zmartzone/mod_auth_openidc/context:cpp)
 [![Total Alerts](https://img.shields.io/lgtm/alerts/g/zmartzone/mod_auth_openidc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/zmartzone/mod_auth_openidc/alerts)
 
+mod_auth_openidc - alpine
+=========================
+This project is a fork of the mod_auth_openidc project. 
+The key differences:
+- The dockerfile builds from an alpine image by default instead of debian.
+- The debian option has been removed.
+- No port is exposed in the final image.
+
 mod_auth_openidc
 ================
 
