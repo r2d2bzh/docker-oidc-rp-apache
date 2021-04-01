@@ -5,7 +5,7 @@
 
 mod_auth_openidc - alpine
 =========================
-This project is a fork of the mod_auth_openidc project. 
+This project is a fork of [zmartzone/mod_auth_openidc](https://github.com/zmartzone/mod_auth_openidc). 
 The key differences:
 - The dockerfile builds from an alpine image by default instead of debian.
 - The debian option has been removed.
