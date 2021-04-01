@@ -1,6 +1,6 @@
 mod_auth_openidc - alpine
 =========================
-This project is a fork of [zmartzone/mod_auth_openidc](https://github.com/zmartzone/mod_auth_openidc). 
+This project is forked from [zmartzone/mod_auth_openidc](https://github.com/zmartzone/mod_auth_openidc). 
 The key differences:
 - The Alpine image is used by default instead of Debian.
 - The Debian option has been removed.
