@@ -18,9 +18,9 @@ RUN mkdir ${BUILD_DIR}
 
 # add dependencies, build and install mod_auth_openidc, need atomic operation for image size
 RUN apk update && apk add --no-cache \
-  apache2 \
-  apache2-proxy \
-  apache2-ssl \
+  apache2=2.4.51-r0 \
+  apache2-proxy=2.4.51-r0 \
+  apache2-ssl=2.4.51-r0 \
   wget \
   jansson \
   hiredis \
