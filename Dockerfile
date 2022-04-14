@@ -1,4 +1,4 @@
-FROM alpine:3.13.3
+FROM alpine:3.15.4
 
 ENV MOD_AUTH_OPENIDC_REPOSITORY https://github.com/zmartzone/mod_auth_openidc.git
 
